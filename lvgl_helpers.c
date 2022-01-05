@@ -19,9 +19,9 @@
 #include "driver/i2c.h"
 
 #ifdef LV_LVGL_H_INCLUDE_SIMPLE
-#include "src/lv_core/lv_refr.h"
+#include "src/core/lv_refr.h" //Changed from #include "src/lv_core/lv_refr.h" to #include "src/core/lv_refr.h" EKH 10112021
 #else
-#include "lvgl/src/lv_core/lv_refr.h"
+#include "lvgl/src/core/lv_refr.h" // changed from #include "lvgl/src/lv_core/lv_refr.h" to #include "lvgl/src/core/lv_refr.h" EKH 10112021
 #endif
 
 /*********************

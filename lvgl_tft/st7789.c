@@ -162,10 +162,10 @@ void st7789_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * colo
     offsety2 += CONFIG_LV_TFT_DISPLAY_Y_OFFSET;
 
 #elif (LV_HOR_RES_MAX == 240) && (LV_VER_RES_MAX == 240)
-#if (CONFIG_LV_DISPLAY_ORIENTATION_PORTRAIT)
+#if (CONFIG_LV_DISPLAY_ORIENTATION == 0)   // PORTRAIT - added by EKH 18112021
     offsetx1 += 80;
     offsetx2 += 80;
-#elif (CONFIG_LV_DISPLAY_ORIENTATION_LANDSCAPE_INVERTED)
+#elif (CONFIG_LV_DISPLAY_ORIENTATION == 3) // LANDSCAPE_INVERTED - added by EKH 18112021
     offsety1 += 80;
     offsety2 += 80;
 #endif
