@@ -24,10 +24,11 @@
  **********************/
 
 /*The LCD needs a bunch of command/argument values to be initialized. They are stored in this struct. */
-typedef struct {
+typedef struct
+{
     uint8_t cmd;
     uint8_t data[16];
-    uint8_t databytes; //No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
+    uint8_t databytes; // No of data in data; bit 7 = delay after set; 0xFF = end of cmds.
 } lcd_init_cmd_t;
 
 /**********************
@@ -61,13 +62,14 @@ void st7789_init(void)
         {ST7789_IDSET, {0x11}, 1},
         {ST7789_VCMOFSET, {0x35, 0x3E}, 2},
         {ST7789_CABCCTRL, {0xBE}, 1},
-        {ST7789_MADCTL, {0x00}, 1}, // Set to 0x28 if your display is flipped
+        //{ST7789_MADCTL, {0x00}, 1}, // Set to 0x28 if your display is flipped -  // Removed by EKH 10032022
+        {ST7789_MADCTL, {0xE8}, 1}, // // Added by EKH 10032022
         {ST7789_COLMOD, {0x55}, 1},
 
 #if ST7789_INVERT_COLORS == 1
-		{ST7789_INVON, {0}, 0}, // set inverted mode
+        {ST7789_INVON, {0}, 0}, // set inverted mode
 #else
- 		{ST7789_INVOFF, {0}, 0}, // set non-inverted mode
+        {ST7789_INVOFF, {0}, 0}, // set non-inverted mode
 #endif
 
         {ST7789_RGBCTRL, {0x00, 0x1B}, 2},
@@ -85,7 +87,7 @@ void st7789_init(void)
         {0, {0}, 0xff},
     };
 
-    //Initialize non-SPI GPIOs
+    // Initialize non-SPI GPIOs
     gpio_pad_select_gpio(ST7789_DC);
     gpio_set_direction(ST7789_DC, GPIO_MODE_OUTPUT);
 
@@ -99,7 +101,7 @@ void st7789_init(void)
     gpio_set_direction(ST7789_BCKL, GPIO_MODE_OUTPUT);
 #endif
 
-    //Reset the display
+    // Reset the display
 #if !defined(ST7789_SOFT_RST)
     gpio_set_level(ST7789_RST, 0);
     vTaskDelay(100 / portTICK_RATE_MS);
@@ -111,20 +113,22 @@ void st7789_init(void)
 
     printf("ST7789 initialization.\n");
 
-    //Send all the commands
+    // Send all the commands
     uint16_t cmd = 0;
-    while (st7789_init_cmds[cmd].databytes!=0xff) {
+    while (st7789_init_cmds[cmd].databytes != 0xff)
+    {
         st7789_send_cmd(st7789_init_cmds[cmd].cmd);
-        st7789_send_data(st7789_init_cmds[cmd].data, st7789_init_cmds[cmd].databytes&0x1F);
-        if (st7789_init_cmds[cmd].databytes & 0x80) {
-                vTaskDelay(100 / portTICK_RATE_MS);
+        st7789_send_data(st7789_init_cmds[cmd].data, st7789_init_cmds[cmd].databytes & 0x1F);
+        if (st7789_init_cmds[cmd].databytes & 0x80)
+        {
+            vTaskDelay(100 / portTICK_RATE_MS);
         }
         cmd++;
     }
 
     st7789_enable_backlight(true);
 
-    st7789_set_orientation(CONFIG_LV_DISPLAY_ORIENTATION);
+    // st7789_set_orientation(CONFIG_LV_DISPLAY_ORIENTATION); // Removed by EKH 10032022
 }
 
 void st7789_enable_backlight(bool backlight)
@@ -133,7 +137,7 @@ void st7789_enable_backlight(bool backlight)
     printf("%s backlight.\n", backlight ? "Enabling" : "Disabling");
     uint32_t tmp = 0;
 
-#if (ST7789_BCKL_ACTIVE_LVL==1)
+#if (ST7789_BCKL_ACTIVE_LVL == 1)
     tmp = backlight ? 1 : 0;
 #else
     tmp = backlight ? 0 : 1;
@@ -146,7 +150,7 @@ void st7789_enable_backlight(bool backlight)
 /* The ST7789 display controller can drive 320*240 displays, when using a 240*240
  * display there's a gap of 80px, we need to edit the coordinates to take into
  * account that gap, this is not necessary in all orientations. */
-void st7789_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * color_map)
+void st7789_flush(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
 {
     uint8_t data[4] = {0};
 
@@ -161,7 +165,7 @@ void st7789_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * colo
     offsety1 += CONFIG_LV_TFT_DISPLAY_Y_OFFSET;
     offsety2 += CONFIG_LV_TFT_DISPLAY_Y_OFFSET;
 
-#elif (LV_HOR_RES_MAX == 240) && (LV_VER_RES_MAX == 240)
+#elif (LV_HOR_RES_MAX == 320) && (LV_VER_RES_MAX == 240)
 #if (CONFIG_LV_DISPLAY_ORIENTATION == 0)   // PORTRAIT - added by EKH 18112021
     offsetx1 += 80;
     offsetx2 += 80;
@@ -192,8 +196,7 @@ void st7789_flush(lv_disp_drv_t * drv, const lv_area_t * area, lv_color_t * colo
 
     uint32_t size = lv_area_get_width(area) * lv_area_get_height(area);
 
-    st7789_send_color((void*)color_map, size * 2);
-
+    st7789_send_color((void *)color_map, size * 2);
 }
 
 /**********************
@@ -206,14 +209,14 @@ void st7789_send_cmd(uint8_t cmd)
     disp_spi_send_data(&cmd, 1);
 }
 
-void st7789_send_data(void * data, uint16_t length)
+void st7789_send_data(void *data, uint16_t length)
 {
     disp_wait_for_pending_transactions();
     gpio_set_level(ST7789_DC, 1);
     disp_spi_send_data(data, length);
 }
 
-static void st7789_send_color(void * data, uint16_t length)
+static void st7789_send_color(void *data, uint16_t length)
 {
     disp_wait_for_pending_transactions();
     gpio_set_level(ST7789_DC, 1);
@@ -225,22 +228,27 @@ static void st7789_set_orientation(uint8_t orientation)
     // ESP_ASSERT(orientation < 4);
 
     const char *orientation_str[] = {
-        "PORTRAIT", "PORTRAIT_INVERTED", "LANDSCAPE", "LANDSCAPE_INVERTED"
-    };
+        "PORTRAIT", "PORTRAIT_INVERTED", "LANDSCAPE", "LANDSCAPE_INVERTED"};
 
     ESP_LOGI(TAG, "Display orientation: %s", orientation_str[orientation]);
 
     uint8_t data[] =
     {
 #if CONFIG_LV_PREDEFINED_DISPLAY_TTGO
-	0x60, 0xA0, 0x00, 0xC0
+        0x60,
+        0xA0,
+        0x00,
+        0xC0
 #else
-	0xC0, 0x00, 0x60, 0xA0
+        0xC0,
+        0x00,
+        0x60,
+        0xA0
 #endif
     };
 
     ESP_LOGI(TAG, "0x36 command value: 0x%02X", data[orientation]);
 
     st7789_send_cmd(ST7789_MADCTL);
-    st7789_send_data((void *) &data[orientation], 1);
+    st7789_send_data((void *)&data[orientation], 1);
 }
